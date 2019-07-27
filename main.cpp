@@ -5,6 +5,7 @@ void usage() {
     printf("sample: pcap_test wlan0\n");
 }
 
+
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         usage();
@@ -19,6 +20,10 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    libnet_ethernet_hdr* ethernet_hdr = (libnet_ethernet_hdr*)malloc(sizeof(libnet_ethernet_hdr));
+    libnet_ipv4_hdr* ip_hdr = (libnet_ipv4_hdr*)malloc(sizeof(libnet_ipv4_hdr));
+    libnet_tcp_hdr* tcp_hdr = (libnet_tcp_hdr*)malloc(sizeof(libnet_tcp_hdr));
+
     while (true) {
         struct pcap_pkthdr* header;
         const u_char* packet;
@@ -29,6 +34,12 @@ int main(int argc, char* argv[]) {
 
         printf("\r\n%u bytes captured\n", header->caplen);
 
+        if(packetInsert(const_cast<u_char*>(packet), &ethernet_hdr, &ip_hdr, &tcp_hdr)){
+            printfMacInfo(ethernet_hdr);
+            printf_Ip_Port_Info(ip_hdr, tcp_hdr);
+            printfTcpData(ip_hdr, tcp_hdr, packet);
+        }
+        /*
         if(my_ntohs(*(reinterpret_cast<const u_int16_t*>(packet+12))) == 0x0800){       //check ip
             if(reinterpret_cast<u_int8_t>(*(packet+23)) == 0x06){                       // check tcp
                 printfMacInfo('S', packet+6);                                           // show Source Mac Address
@@ -39,7 +50,11 @@ int main(int argc, char* argv[]) {
                 printfTcpData(packet);
             }
         }
+        */
     }
+    free(ethernet_hdr);
+    free(ip_hdr);
+    free(tcp_hdr);
 
     pcap_close(handle);
     return 0;
